@@ -9,4 +9,5 @@ require (
 	github.com/scritchley/orc v0.0.0-20200117172124-9a1bb50386e0
 	github.com/stretchr/testify v1.6.1 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 )

@@ -4,11 +4,22 @@ import (
 	"fmt"
 	"github.com/colinmarc/hdfs"
 	"github.com/scritchley/orc"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 )
 
-const PathHdfs string = "PATH"
+type Settings struct {
+	Cluster struct {
+		Address []string `yaml:",flow"`
+	}
+	Data struct {
+		Path []string `yaml:",flow"`
+	}
+}
+
 
 type DataPack struct{
 	p hdfs.FileReader
@@ -32,18 +43,33 @@ func (t DataPack) ReadAt(p []byte, off int64)(n int, err error){
 	n, err = file.ReadAt(p, off)
 	return n,err
 }
+var PathHdfs string = ""
 
 func NewReadAtUn(client *hdfs.Client,  offset int64, fileInfo os.FileInfo) orc.SizedReaderAt {
 	return DataPack{client:client, offset: offset, fInfo: fileInfo }
 }
-
+const fileName = "conf.yaml"
 func main(){
 
+	yamlFile, err := ioutil.ReadFile(fileName)
+	if !(err==nil){
+		panic(err)
+	}
+
+	cFile := Settings{}
+	err = yaml.Unmarshal([]byte(yamlFile), &cFile)
+	if !(err==nil){
+		panic(err)
+	}
+
+	fmt.Printf("Result: %v\n", cFile)
+
+	PathHdfs = cFile.Data.Path[0]
 
 	fmt.Print("HDFS Read...")
 
 	// Create new client to HDFS
-	client, _ := hdfs.New("localhost:8020")
+	client, _ := hdfs.New(cFile.Cluster.Address[0] /*"localhost:8020"*/)
 
 
 	// Red HDFS directory
@@ -56,7 +82,7 @@ func main(){
 	for _, finFo := range fInfos{
 
 		// read only files
-		if finFo.IsDir()!= true {
+		if finFo.IsDir()!= true && strings.Contains(finFo.Name(),".orc")  {
 
 			// Print name and size of the file.
 			fmt.Println( finFo.Name(), finFo.Size())
@@ -66,7 +92,9 @@ func main(){
 
 			orcOps,_ := orc.NewReader(data)
 
-			c:=orcOps.Select("col_1" , "col_2", "col_3")
+			orcOps.Schema().Columns()
+
+			c:=orcOps.Select(orcOps.Schema().Columns()...)//"col_1" , "col_2", "col_3")
 
 			for c.Stripes(){
 				for c.Next(){
