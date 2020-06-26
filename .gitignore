@@ -99,7 +99,7 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 #Test and Config Files
-*.yaml
+conf.yaml
 .idea/.gitignore
 .idea/horc.iml
 .idea/misc.xml
